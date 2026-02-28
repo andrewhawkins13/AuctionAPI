@@ -86,15 +86,25 @@ describe("resolveRound", () => {
     assert.equal(game.status, "completed");
   });
 
-  it("populates tiedWith when multiple players bid the same highest amount", () => {
-    // Zero out CPU currency so only the player can bid
+  it("returns empty tiedWith when only one player bids", () => {
     for (const p of game.players) {
       if (p.type === "cpu") p.currency = 0;
     }
     const result = resolveRound(game, 50);
-    assert.ok(Array.isArray(result.tiedWith), "tiedWith should be an array");
+    assert.ok(Array.isArray(result.tiedWith));
     assert.equal(result.winnerId, "player");
     assert.deepEqual(result.tiedWith, []);
+  });
+
+  it("populates tiedWith when multiple players bid the same highest amount", () => {
+    // With currency=1, all strategies clamp to exactly 1
+    for (const p of game.players) {
+      if (p.type === "cpu") p.currency = p.id === "market-bot" ? 1 : 0;
+    }
+    const result = resolveRound(game, 1);
+    assert.deepEqual(result.tiedWith, ["player", "market-bot"]);
+    assert.ok(["player", "market-bot"].includes(result.winnerId));
+    assert.equal(result.winningBid, 1);
   });
 
   it("returns empty tiedWith when there is no tie", () => {
