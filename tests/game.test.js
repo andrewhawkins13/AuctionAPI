@@ -86,21 +86,25 @@ describe("resolveRound", () => {
     assert.equal(game.status, "completed");
   });
 
-  it("populates tiedWith when multiple players bid the same highest amount", () => {
-    // Force a scenario: give all CPU bots 0 currency so they bid 0
-    // Then player bids something — they win alone, no tie
-    // To test a tie, we need to manipulate more carefully
-    // Set all CPU currencies to 0 and player bids 0 => all bid 0, no winner
+  it("returns empty tiedWith when only one player bids", () => {
     for (const p of game.players) {
       if (p.type === "cpu") p.currency = 0;
     }
-    // Player also bids 0 is not valid (must be positive), so let's test differently:
-    // We'll check that tiedWith is an array on every round result
     const result = resolveRound(game, 50);
-    assert.ok(Array.isArray(result.tiedWith), "tiedWith should be an array");
-    // Player is the only one with currency, so they win alone
+    assert.ok(Array.isArray(result.tiedWith));
     assert.equal(result.winnerId, "player");
     assert.deepEqual(result.tiedWith, []);
+  });
+
+  it("populates tiedWith when multiple players bid the same highest amount", () => {
+    // With currency=1, all strategies clamp to exactly 1
+    for (const p of game.players) {
+      if (p.type === "cpu") p.currency = p.id === "market-bot" ? 1 : 0;
+    }
+    const result = resolveRound(game, 1);
+    assert.deepEqual(result.tiedWith, ["player", "market-bot"]);
+    assert.ok(["player", "market-bot"].includes(result.winnerId));
+    assert.equal(result.winningBid, 1);
   });
 
   it("returns empty tiedWith when there is no tie", () => {
@@ -149,35 +153,5 @@ describe("getResults", () => {
         assert.ok(curr.propertyCount > next.propertyCount, "Should be sorted by property count desc");
       }
     }
-  });
-});
-
-describe("route-level validation (via model)", () => {
-  it("rejects bid > player currency", () => {
-    const game = createGame();
-    const player = game.players.find((p) => p.id === "player");
-    // Player has 1000 currency. Bid 1001 should fail at the route level.
-    // Here we just verify the model would accept it (route does the validation).
-    // So this test documents the expectation.
-    assert.equal(player.currency, 1000);
-  });
-
-  it("rejects negative amounts at route level", () => {
-    // Route-level validation — tested via HTTP in integration tests.
-    // Documenting expectation: amount must be positive integer.
-    assert.ok(true, "Negative amounts rejected by route validation");
-  });
-
-  it("completed game returns 409 at route level", () => {
-    const game = createGame();
-    for (let i = 0; i < 10; i++) {
-      resolveRound(game, 1);
-    }
-    assert.equal(game.status, "completed");
-  });
-
-  it("in-progress game returns 409 for results at route level", () => {
-    const game = createGame();
-    assert.equal(game.status, "in_progress");
   });
 });

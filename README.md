@@ -58,11 +58,11 @@ Final scoreboard. Only available after all 10 rounds.
 
 ## CPU Bidders
 
-**Market Mike** — Anchors to the previous round's winning bid plus 5-15%. Opens round 1 at 15. Steady and predictable.
+**Market Mike** — Anchors to the previous round's winning bid plus 5-15%. Opens round 1 at 15.
 
-**Chaos Cleo** — Coin flip each round: heads = 40-50% of remaining currency, tails = 5-10%. No middle ground. Dangerous and self-destructive.
+**Chaos Cleo** — Coin flip each round: heads = 40-50% of remaining currency, tails = 5-10%.
 
-**Analytical Ada** — Divides remaining currency evenly across remaining rounds, with +/- 20% variance. Bids 30% more aggressively when behind by 3+ properties. The adaptive strategist.
+**Analytical Ada** — Divides remaining currency evenly across remaining rounds, with +/- 20% variance. Bids 30% more aggressively when behind by 3+ properties.
 
 ## Bruno Collection
 
