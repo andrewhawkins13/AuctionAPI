@@ -19,7 +19,6 @@ const TOTAL_ROUNDS = 10;
 // TODO: TTL eviction for stale games
 export const games = new Map();
 
-/** Creates a new game with 4 players and 10 properties. Stores it in the games Map. */
 export function createGame() {
   const id = crypto.randomBytes(4).toString("hex");
 
@@ -48,22 +47,15 @@ export function createGame() {
   return game;
 }
 
-/**
- * Resolves the current round: records bids, picks winner, advances game state.
- * @param {object} game - The game object
- * @param {number} playerBidAmount - The human player's bid
- * @returns {object} Round result with bids, winnerId, winningBid, tiedWith
- */
+/** @returns {object} Round result with bids, winnerId, winningBid, tiedWith */
 export function resolveRound(game, playerBidAmount) {
   const round = game.currentRound;
   const property = game.properties[round - 1];
 
   const bids = [];
 
-  // Record player bid
   bids.push({ playerId: "player", amount: playerBidAmount });
 
-  // Generate CPU bids
   for (const player of game.players) {
     if (player.type !== "cpu") continue;
 
@@ -78,7 +70,6 @@ export function resolveRound(game, playerBidAmount) {
     bids.push({ playerId: player.id, amount });
   }
 
-  // Find highest bid
   const maxBid = Math.max(...bids.map((b) => b.amount));
 
   let winnerId = null;
@@ -96,12 +87,10 @@ export function resolveRound(game, playerBidAmount) {
     winnerId = winner.playerId;
     winningBid = maxBid;
 
-    // Deduct currency from winner
     const winnerPlayer = game.players.find((p) => p.id === winnerId);
     winnerPlayer.currency -= winningBid;
     winnerPlayer.propertiesWon.push(property.name);
 
-    // Update property
     property.winningBid = winningBid;
     property.winnerId = winnerId;
   }
@@ -118,7 +107,6 @@ export function resolveRound(game, playerBidAmount) {
   game.rounds.push(roundResult);
   game.roundPhase = "resolved";
 
-  // Advance or complete
   if (round >= TOTAL_ROUNDS) {
     game.status = "completed";
   } else {
@@ -129,11 +117,6 @@ export function resolveRound(game, playerBidAmount) {
   return roundResult;
 }
 
-/**
- * Returns final scoreboard sorted by properties won (tiebreak: most currency remaining).
- * @param {object} game - A completed game object
- * @returns {{ winner: object, scoreboard: object[], rounds: object[] }}
- */
 export function getResults(game) {
   const scoreboard = game.players
     .map((p) => ({
