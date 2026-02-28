@@ -1,0 +1,11 @@
+meta {
+  name: Get Game State
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/games/{{gameId}}
+  body: none
+  auth: none
+}

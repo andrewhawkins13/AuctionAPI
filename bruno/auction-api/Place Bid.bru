@@ -1,0 +1,23 @@
+meta {
+  name: Place Bid
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/games/{{gameId}}/bid
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "amount": 150
+  }
+}
+
+script:post-response {
+  if (res.body.round) {
+    console.log("Round " + res.body.round.round + " - Winner: " + res.body.round.winnerId + " with bid " + res.body.round.winningBid);
+  }
+}

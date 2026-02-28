@@ -1,0 +1,14 @@
+{
+  "name": "auction-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test 'tests/*.test.js'"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.9",
+    "hono": "^4.12.3"
+  }
+}
