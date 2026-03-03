@@ -7,7 +7,7 @@ const app = new Hono();
 
 app.use("*", cors());
 
-app.get("/health", (c) => c.json({ status: "ok" }));
+app.get("/", (c) => c.json({ status: "ok" }));
 
 app.route("/", gameRoutes);
 
@@ -19,7 +19,7 @@ app.onError((err, c) => {
 serve({ fetch: app.fetch, port: 3000 }, () => {
   console.log("Auction API running on http://localhost:3000");
   console.log("Routes:");
-  console.log("  GET  /health        Health check");
+  console.log("  GET  /              Health check");
   console.log("  POST /games         Create a new game");
   console.log("  GET  /games/:id     Get game state");
   console.log("  POST /games/:id/bid Place a bid");
