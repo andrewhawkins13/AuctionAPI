@@ -122,7 +122,7 @@ describe("resolveRound", () => {
     const result = resolveRound(game, 0);
     assert.equal(result.winnerId, null);
     assert.equal(result.winningBid, 0);
-    assert.equal(result.bids.length, 4);
+    assert.equal(result.bids.length, game.players.length);
     const property = game.properties[0];
     assert.equal(property.winningBid, null, "Property should remain unclaimed");
     assert.equal(property.winnerId, null);

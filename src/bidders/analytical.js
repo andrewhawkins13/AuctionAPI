@@ -1,4 +1,4 @@
-import { jitter, normalizeBid } from "./index.js";
+import { jitter, normalizeBid } from "./utils.js";
 
 /**
  * Analytical Ada: budget-proportional bidding with catch-up logic.
@@ -32,5 +32,5 @@ export function analyticalBid({ currency, currentRound, totalRounds, roundHistor
     }
   }
 
-  return normalizeBid(base + jitter(), currency) || 1;
+  return normalizeBid(base + jitter(), currency) || Math.min(1, currency);
 }

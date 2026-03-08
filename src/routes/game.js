@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { createGame, PLAYER_ID, PLAYERS, games, resolveRound, autoResolveRemainingRounds, getResults } from "../models/game.js";
+import { createGame, PLAYER_ID, games, resolveRound, autoResolveRemainingRounds, getResults } from "../models/game.js";
 
 const app = new Hono();
 

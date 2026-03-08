@@ -1,4 +1,4 @@
-import { jitter, normalizeBid } from "./index.js";
+import { jitter, normalizeBid } from "./utils.js";
 
 /**
  * Chaos Cleo: bimodal coin-flip strategy.
@@ -18,5 +18,5 @@ export function chaosBid({ currency }) {
     bid = Math.floor(currency * (0.05 + Math.random() * 0.05));
   }
 
-  return normalizeBid(bid + jitter(), currency) || 1;
+  return normalizeBid(bid + jitter(), currency) || Math.min(1, currency);
 }

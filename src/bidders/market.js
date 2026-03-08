@@ -1,4 +1,4 @@
-import { jitter, normalizeBid } from "./index.js";
+import { jitter, normalizeBid } from "./utils.js";
 
 /**
  * Market Mike: anchors to previous winning bid + 5-15% increment.
@@ -17,5 +17,5 @@ export function marketBid({ currency, currentRound, roundHistory }) {
     bid = Math.floor(lastRound.winningBid * increment);
   }
 
-  return normalizeBid(bid + jitter(), currency) || 1;
+  return normalizeBid(bid + jitter(), currency) || Math.min(1, currency);
 }
