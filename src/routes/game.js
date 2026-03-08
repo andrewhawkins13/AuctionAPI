@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { createGame, games, resolveRound, getResults } from "../models/game.js";
+import { createGame, PLAYER_ID, games, resolveRound, autoResolveRemainingRounds, getResults } from "../models/game.js";
 
 const app = new Hono();
 
@@ -34,16 +34,22 @@ app.post("/games/:id/bid", async (c) => {
     return c.json({ error: "Missing bid amount" }, 400);
   }
 
-  if (!Number.isInteger(amount) || amount <= 0) {
-    return c.json({ error: "Bid must be a positive integer" }, 400);
+  if (!Number.isInteger(amount) || amount < 0) {
+    return c.json({ error: "Bid must be a non-negative integer" }, 400);
   }
 
-  const player = game.players.find((p) => p.id === "player");
+  const player = game.players.find((p) => p.id === PLAYER_ID);
   if (amount > player.currency) {
-    return c.json({ error: "Bid exceeds available currency" }, 400);
+    return c.json({ error: "Bid exceeds available currency. Maximum allowed bid is $" + player.currency }, 400);
   }
 
   const roundResult = resolveRound(game, amount);
+
+  if (player.currency <= 0 && game.status !== "completed") {
+    const rounds = autoResolveRemainingRounds(game);
+    return c.json({ round: roundResult, autoResolved: rounds, game });
+  }
+
   return c.json({ round: roundResult, game });
 });
 

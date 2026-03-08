@@ -9,5 +9,7 @@ const strategies = {
 };
 
 export function getBid(strategy, context) {
+  if (context.currency <= 0) return 0;
+
   return strategies[strategy](context);
 }
