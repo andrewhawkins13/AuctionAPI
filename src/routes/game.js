@@ -43,12 +43,13 @@ app.post("/games/:id/bid", async (c) => {
     return c.json({ error: "Bid exceeds available currency. Maximum allowed bid is $" + player.currency }, 400);
   }
 
-  if (amount === 0 && player.currency <= 0) {
+  const roundResult = resolveRound(game, amount);
+
+  if (player.currency <= 0 && game.status !== "completed") {
     const rounds = autoResolveRemainingRounds(game);
-    return c.json({ rounds, game });
+    return c.json({ round: roundResult, autoResolved: rounds, game });
   }
 
-  const roundResult = resolveRound(game, amount);
   return c.json({ round: roundResult, game });
 });
 
