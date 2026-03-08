@@ -32,5 +32,5 @@ export function analyticalBid({ currency, currentRound, totalRounds, roundHistor
     }
   }
 
-  return normalizeBid(base + jitter(), currency) || Math.min(1, currency);
+  return normalizeBid(base + jitter(), currency) || Math.min(1, Math.max(0, currency));
 }

@@ -17,5 +17,5 @@ export function marketBid({ currency, currentRound, roundHistory }) {
     bid = Math.floor(lastRound.winningBid * increment);
   }
 
-  return normalizeBid(bid + jitter(), currency) || Math.min(1, currency);
+  return normalizeBid(bid + jitter(), currency) || Math.min(1, Math.max(0, currency));
 }

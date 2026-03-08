@@ -18,5 +18,5 @@ export function chaosBid({ currency }) {
     bid = Math.floor(currency * (0.05 + Math.random() * 0.05));
   }
 
-  return normalizeBid(bid + jitter(), currency) || Math.min(1, currency);
+  return normalizeBid(bid + jitter(), currency) || Math.min(1, Math.max(0, currency));
 }
