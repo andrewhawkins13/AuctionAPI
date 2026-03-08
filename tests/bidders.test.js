@@ -1,5 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { getBid } from "../src/bidders/index.js";
 import { marketBid } from "../src/bidders/market.js";
 import { chaosBid } from "../src/bidders/chaos.js";
 import { analyticalBid } from "../src/bidders/analytical.js";
@@ -9,13 +10,18 @@ const baseContext = {
   currentRound: 1,
   totalRounds: 10,
   roundHistory: [],
+  botId: "test-bot",
 };
 
-describe("marketBid", () => {
+describe("getBid", () => {
   it("returns 0 when currency is 0", () => {
-    assert.equal(marketBid({ ...baseContext, currency: 0 }), 0);
+    assert.equal(getBid("market", { ...baseContext, currency: 0 }), 0);
+    assert.equal(getBid("chaos", { ...baseContext, currency: 0 }), 0);
+    assert.equal(getBid("analytical", { ...baseContext, currency: 0 }), 0);
   });
+});
 
+describe("marketBid", () => {
   it("bids exactly 15 (plus jitter 1-10) on round 1", () => {
     for (let i = 0; i < 50; i++) {
       const bid = marketBid({ ...baseContext });
@@ -56,10 +62,6 @@ describe("marketBid", () => {
 });
 
 describe("chaosBid", () => {
-  it("returns 0 when currency is 0", () => {
-    assert.equal(chaosBid({ ...baseContext, currency: 0 }), 0);
-  });
-
   it("produces a bimodal distribution", () => {
     const bids = [];
     for (let i = 0; i < 200; i++) {
@@ -94,10 +96,6 @@ describe("chaosBid", () => {
 });
 
 describe("analyticalBid", () => {
-  it("returns 0 when currency is 0", () => {
-    assert.equal(analyticalBid({ ...baseContext, currency: 0 }), 0);
-  });
-
   it("returns a positive integer <= currency", () => {
     for (let i = 0; i < 50; i++) {
       const bid = analyticalBid({ ...baseContext, currency: 500 });

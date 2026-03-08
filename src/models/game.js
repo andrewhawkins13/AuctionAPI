@@ -1,6 +1,42 @@
 import crypto from "node:crypto";
 import { getBid } from "../bidders/index.js";
 
+export const PLAYER_ID = "player";
+
+export const PLAYERS = [
+  {
+    id: PLAYER_ID,
+    name: "You",
+    currency: 1000,
+    type: "human",
+    propertiesWon: [],
+  },
+  {
+    id: "market-bot",
+    name: "Market Mike",
+    currency: 1000,
+    type: "cpu",
+    strategy: "market",
+    propertiesWon: [],
+  },
+  {
+    id: "chaos-bot",
+    name: "Chaos Cleo",
+    currency: 1000,
+    type: "cpu",
+    strategy: "chaos",
+    propertiesWon: [],
+  },
+  {
+    id: "analytical-bot",
+    name: "Analytical Ada",
+    currency: 1000,
+    type: "cpu",
+    strategy: "analytical",
+    propertiesWon: [],
+  },
+]
+
 const PROPERTIES = [
   "The Rusty Spoon Diner",
   "Sunset Pier Bungalow",
@@ -19,6 +55,7 @@ const TOTAL_ROUNDS = 10;
 // TODO: TTL eviction for stale games
 export const games = new Map();
 
+/** @returns {object} New game instance */
 export function createGame() {
   const id = crypto.randomBytes(4).toString("hex");
 
@@ -27,12 +64,7 @@ export function createGame() {
     status: "in_progress",
     currentRound: 1,
     roundPhase: "bidding",
-    players: [
-      { id: "player", name: "You", currency: 1000, type: "human", propertiesWon: [] },
-      { id: "market-bot", name: "Market Mike", currency: 1000, type: "cpu", strategy: "market", propertiesWon: [] },
-      { id: "chaos-bot", name: "Chaos Cleo", currency: 1000, type: "cpu", strategy: "chaos", propertiesWon: [] },
-      { id: "analytical-bot", name: "Analytical Ada", currency: 1000, type: "cpu", strategy: "analytical", propertiesWon: [] },
-    ],
+    players: JSON.parse(JSON.stringify(PLAYERS)),
     properties: PROPERTIES.map((name, i) => ({
       id: i + 1,
       name,
@@ -54,7 +86,7 @@ export function resolveRound(game, playerBidAmount) {
 
   const bids = [];
 
-  bids.push({ playerId: "player", amount: playerBidAmount });
+  bids.push({ playerId: PLAYER_ID, amount: playerBidAmount });
 
   for (const player of game.players) {
     if (player.type !== "cpu") continue;
@@ -64,9 +96,10 @@ export function resolveRound(game, playerBidAmount) {
       currentRound: round,
       totalRounds: TOTAL_ROUNDS,
       roundHistory: game.rounds,
+      botId: player.id,
     };
 
-    const amount = player.currency <= 0 ? 0 : getBid(player.strategy, context);
+    const amount = getBid(player.strategy, context);
     bids.push({ playerId: player.id, amount });
   }
 
@@ -117,6 +150,16 @@ export function resolveRound(game, playerBidAmount) {
   return roundResult;
 }
 
+/** @returns {object[]} Array of round results from auto-resolving remaining rounds */
+export function autoResolveRemainingRounds(game) {
+  const results = [];
+  while (game.status !== "completed") {
+    results.push(resolveRound(game, 0));
+  }
+  return results;
+}
+
+/** @returns {object} Final game results with winner, scoreboard, and rounds */
 export function getResults(game) {
   const scoreboard = game.players
     .map((p) => ({
@@ -126,7 +169,11 @@ export function getResults(game) {
       propertyCount: p.propertiesWon.length,
       currencyRemaining: p.currency,
     }))
-    .sort((a, b) => b.propertyCount - a.propertyCount || b.currencyRemaining - a.currencyRemaining);
+    .sort(
+      (a, b) =>
+        b.propertyCount - a.propertyCount ||
+        b.currencyRemaining - a.currencyRemaining,
+    );
 
   return {
     winner: scoreboard[0],

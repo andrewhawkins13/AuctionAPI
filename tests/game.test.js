@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { createGame, resolveRound, getResults, games } from "../src/models/game.js";
+import { createGame, resolveRound, autoResolveRemainingRounds, getResults, games, PLAYER_ID } from "../src/models/game.js";
 
 const EXPECTED_PROPERTIES = [
   "The Rusty Spoon Diner",
@@ -48,9 +48,6 @@ describe("resolveRound", () => {
 
   it("correctly identifies winner as highest bidder", () => {
     const result = resolveRound(game, 999);
-    // Player bid 999 — very likely the highest
-    // CPU bots start with 1000 currency, but market bids 15+jitter, chaos is random, analytical ~100+jitter
-    // With 999, player should almost always win round 1
     assert.equal(result.round, 1);
     assert.ok(result.winnerId, "Should have a winner");
     assert.ok(result.winningBid > 0, "Winning bid should be positive");
@@ -63,11 +60,9 @@ describe("resolveRound", () => {
     const winner = game.players.find((p) => p.id === result.winnerId);
     const losers = game.players.filter((p) => p.id !== result.winnerId);
 
-    // Winner's currency should have decreased
     const winnerBefore = currenciesBefore[game.players.indexOf(winner)];
     assert.equal(winner.currency, winnerBefore - result.winningBid);
 
-    // Losers' currency should be unchanged (still 1000, since this is round 1)
     for (const loser of losers) {
       assert.equal(loser.currency, 1000);
     }
@@ -86,54 +81,82 @@ describe("resolveRound", () => {
     assert.equal(game.status, "completed");
   });
 
+  it("accepts a $0 bid from the player", () => {
+    const result = resolveRound(game, 0);
+    const playerBid = result.bids.find((b) => b.playerId === PLAYER_ID);
+    assert.equal(playerBid.amount, 0);
+    assert.ok(result.winnerId !== PLAYER_ID, "Player should not win with a $0 bid");
+    assert.ok(result.winningBid > 0, "A CPU should win");
+  });
+
   it("returns empty tiedWith when only one player bids", () => {
     for (const p of game.players) {
       if (p.type === "cpu") p.currency = 0;
     }
     const result = resolveRound(game, 50);
     assert.ok(Array.isArray(result.tiedWith));
-    assert.equal(result.winnerId, "player");
+    assert.equal(result.winnerId, PLAYER_ID);
     assert.deepEqual(result.tiedWith, []);
   });
 
   it("populates tiedWith when multiple players bid the same highest amount", () => {
-    // With currency=1, all strategies clamp to exactly 1
     for (const p of game.players) {
       if (p.type === "cpu") p.currency = p.id === "market-bot" ? 1 : 0;
     }
     const result = resolveRound(game, 1);
-    assert.deepEqual(result.tiedWith, ["player", "market-bot"]);
-    assert.ok(["player", "market-bot"].includes(result.winnerId));
+    assert.deepEqual(result.tiedWith, [PLAYER_ID, "market-bot"]);
+    assert.ok([PLAYER_ID, "market-bot"].includes(result.winnerId));
     assert.equal(result.winningBid, 1);
   });
 
   it("returns empty tiedWith when there is no tie", () => {
     const result = resolveRound(game, 999);
-    // Player bids 999, CPUs bid much less in round 1
     assert.deepEqual(result.tiedWith, []);
-    assert.equal(result.winnerId, "player");
+    assert.equal(result.winnerId, PLAYER_ID);
   });
 
-  it("handles a round where all bids are 0", () => {
-    // Set all CPU currencies to 0
+  it("handles a round where all bids are 0 (no winner)", () => {
     for (const p of game.players) {
       if (p.type === "cpu") p.currency = 0;
     }
-    // Set player currency to 0 too — but player can't bid 0 (validation)
-    // Instead, set player currency very low and bid 1, but CPUs bid 0
-    // Actually, we need to test the model directly: pass playerBidAmount = 0
-    // The route validates > 0, but the model function itself should handle 0
     const result = resolveRound(game, 0);
-    // All CPUs have 0 currency, player bid 0 => maxBid is 0, no winner
     assert.equal(result.winnerId, null);
     assert.equal(result.winningBid, 0);
+    assert.equal(result.bids.length, 4);
+    const property = game.properties[0];
+    assert.equal(property.winningBid, null, "Property should remain unclaimed");
+    assert.equal(property.winnerId, null);
+  });
+});
+
+describe("autoResolveRemainingRounds", () => {
+  it("completes the game and returns all round results", () => {
+    const game = createGame();
+    // Play 5 rounds manually
+    for (let i = 0; i < 5; i++) {
+      resolveRound(game, 1);
+    }
+    assert.equal(game.status, "in_progress");
+
+    const results = autoResolveRemainingRounds(game);
+    assert.equal(results.length, 5);
+    assert.equal(game.status, "completed");
+    assert.equal(game.rounds.length, 10);
+  });
+
+  it("returns empty array when game is already completed", () => {
+    const game = createGame();
+    for (let i = 0; i < 10; i++) {
+      resolveRound(game, 1);
+    }
+    const results = autoResolveRemainingRounds(game);
+    assert.equal(results.length, 0);
   });
 });
 
 describe("getResults", () => {
   it("returns players sorted by properties won (tiebreak: currency)", () => {
     const game = createGame();
-    // Play all 10 rounds
     for (let i = 0; i < 10; i++) {
       resolveRound(game, 1);
     }
@@ -143,7 +166,6 @@ describe("getResults", () => {
     assert.equal(results.scoreboard.length, 4);
     assert.ok(results.winner, "Should have a winner");
 
-    // Verify sorting: each entry should have >= properties than the next
     for (let i = 0; i < results.scoreboard.length - 1; i++) {
       const curr = results.scoreboard[i];
       const next = results.scoreboard[i + 1];

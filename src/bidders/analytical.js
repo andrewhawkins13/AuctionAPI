@@ -1,12 +1,12 @@
+import { jitter, normalizeBid } from "./index.js";
+
 /**
  * Analytical Ada: budget-proportional bidding with catch-up logic.
  * Base = currency / remaining rounds, +/- 20% variance, 1.3x if behind by 3+ properties.
- * @param {{ currency: number, currentRound: number, totalRounds: number, roundHistory: object[] }} context
+ * @param {{ currency: number, currentRound: number, totalRounds: number, roundHistory: object[], botId: string }} context
  * @returns {number} Bid amount
  */
-export function analyticalBid({ currency, currentRound, totalRounds, roundHistory }) {
-  if (currency <= 0) return 0;
-
+export function analyticalBid({ currency, currentRound, totalRounds, roundHistory, botId }) {
   const remaining = totalRounds - currentRound + 1;
   let base = currency / remaining;
 
@@ -15,10 +15,13 @@ export function analyticalBid({ currency, currentRound, totalRounds, roundHistor
   base *= variance;
 
   // Catch-up: if any opponent has 3+ more properties than this bot
-  const myWins = roundHistory.filter((r) => r.winnerId === "analytical-bot").length;
+  let myWins = 0;
   const opponentWins = {};
   for (const round of roundHistory) {
-    if (round.winnerId && round.winnerId !== "analytical-bot") {
+    if (!round.winnerId) continue;
+    if (round.winnerId === botId) {
+      myWins++;
+    } else {
       opponentWins[round.winnerId] = (opponentWins[round.winnerId] || 0) + 1;
     }
   }
@@ -29,7 +32,5 @@ export function analyticalBid({ currency, currentRound, totalRounds, roundHistor
     }
   }
 
-  const jitter = Math.floor(Math.random() * 10) + 1;
-  let bid = Math.max(1, Math.min(Math.floor(base) + jitter, currency));
-  return bid;
+  return normalizeBid(base + jitter(), currency) || 1;
 }

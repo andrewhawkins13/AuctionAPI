@@ -1,3 +1,5 @@
+import { jitter, normalizeBid } from "./index.js";
+
 /**
  * Market Mike: anchors to previous winning bid + 5-15% increment.
  * Opens round 1 with a flat 15 to feel out the field.
@@ -5,8 +7,6 @@
  * @returns {number} Bid amount
  */
 export function marketBid({ currency, currentRound, roundHistory }) {
-  if (currency <= 0) return 0;
-
   let bid;
 
   if (currentRound === 1) {
@@ -17,7 +17,5 @@ export function marketBid({ currency, currentRound, roundHistory }) {
     bid = Math.floor(lastRound.winningBid * increment);
   }
 
-  const jitter = Math.floor(Math.random() * 10) + 1;
-  bid = Math.max(1, Math.min(bid + jitter, currency));
-  return Math.floor(bid);
+  return normalizeBid(bid + jitter(), currency) || 1;
 }
